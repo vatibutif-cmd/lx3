@@ -40,14 +40,27 @@ let state = {
 const DURATION_SECONDS = 300; // 5 minutes
 const TARGET_PROGRESS = 99.99;
 const UPDATE_INTERVAL_MS = 100;
-const INCREMENT_PER_TICK = (TARGET_PROGRESS / (DURATION_SECONDS * 1000 / UPDATE_INTERVAL_MS));
 
-// Auto-growth timer
+// Dynamic increment calculator for user interactions (Pinduoduo style)
+const calculateUserIncrement = (currentProgress) => {
+  if (currentProgress < 30) return 5 + Math.random() * 3;      // 0-30%: +5~8% (Fast start)
+  if (currentProgress < 60) return 2 + Math.random() * 2;      // 30-60%: +2~4%
+  if (currentProgress < 80) return 0.5 + Math.random() * 1.5;  // 60-80%: +0.5~2%
+  if (currentProgress < 95) return 0.1 + Math.random() * 0.2;  // 80-95%: +0.1~0.3%
+  return 0.01 + Math.random() * 0.04;                          // 95-99.99%: +0.01~0.05% (Crawl)
+};
+
+// Auto-growth timer (Background ambiance, slower than users)
 const timer = setInterval(() => {
   if (state.isComplete) return;
 
   if (state.progress < TARGET_PROGRESS) {
-    state.progress = Math.min(TARGET_PROGRESS, Math.max(state.progress, state.progress + INCREMENT_PER_TICK));
+    // Auto-growth also decays but ensures we eventually reach 99.99% if no one plays
+    let autoIncrement = 0.02; 
+    if (state.progress > 80) autoIncrement = 0.005;
+    if (state.progress > 95) autoIncrement = 0.001;
+
+    state.progress = Math.min(TARGET_PROGRESS, state.progress + autoIncrement);
     io.emit('progress_update', state.progress);
   }
 }, UPDATE_INTERVAL_MS);
@@ -80,7 +93,8 @@ io.on('connection', (socket) => {
       
     } else {
       if (!state.isComplete) {
-         state.progress = Math.min(TARGET_PROGRESS, state.progress + 1.0);
+         const increment = calculateUserIncrement(state.progress);
+         state.progress = Math.min(TARGET_PROGRESS, state.progress + increment);
          io.emit('progress_update', state.progress);
       }
 
