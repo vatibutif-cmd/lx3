@@ -68,27 +68,28 @@ const BatteryOverlay = ({ percent }) => {
 };
 
 const LiveLogs = ({ logs }) => {
+  // Take only the last 5 logs
+  const displayLogs = logs.slice(0, 5);
+  
   return (
-    <div className="flex flex-col gap-3 text-brand-text-blue text-sm font-mono overflow-hidden h-full">
-        <div className="shrink-0 flex flex-col gap-1 border-b border-white/10 pb-2">
-            <div className="flex items-center gap-2">
-                <div className="w-[1vmin] h-[1vmin] rounded-full bg-brand-green animate-pulse" />
-                <span className="text-white font-bold tracking-wider text-lg">实时充电参与者</span>
-            </div>
-
+    <div className="flex flex-col gap-4 w-full mt-auto">
+        <div className="flex items-center gap-3 mb-2">
+            <div className="w-3 h-3 rounded-full bg-brand-green animate-pulse" />
+            <span className="text-white/60 text-base font-bold tracking-wider">实时充电参与者</span>
         </div>
-        <div className="flex-1 overflow-hidden relative">
-            <div className="flex flex-col gap-2 w-full transition-all duration-300">
-                {logs.map((log, index) => (
-                    <div key={index} className="flex items-center gap-2 whitespace-nowrap text-brand-text-blue/80 animate-[slideIn_0.5s_ease-out]">
-                        <span className="opacity-70">[{log.timestamp}]</span>
-                        <span className="text-white font-bold">{log.message.split(' ')[0]}</span>
-                        <span className={log.type === 'success' ? "text-brand-gold font-bold" : "text-brand-green"}>
-                            {log.message.split(' ').slice(1).join(' ')}
-                        </span>
+        <div className="flex flex-col gap-3 w-full">
+            {displayLogs.map((log, index) => (
+                <div key={index} className="flex items-center justify-between text-base border-b border-white/5 pb-2 animate-[slideIn_0.5s_ease-out]">
+                    <div className="flex items-center gap-3">
+                        <span className="text-brand-green font-bold">{log.message.split(' ')[0]}</span>
+                        <span className="text-white/40">{log.message.split(' ').slice(1).join(' ')}</span>
                     </div>
-                ))}
-            </div>
+                    <span className="text-white/20 font-mono scale-90">{log.timestamp}</span>
+                </div>
+            ))}
+            {displayLogs.length === 0 && (
+                <div className="text-white/20 text-sm italic">等待能量注入...</div>
+            )}
         </div>
     </div>
   );
@@ -147,7 +148,7 @@ export default function BigScreen() {
     });
 
     newSocket.on('new_log', (log) => {
-      setLogs(prev => [log, ...prev].slice(0, 10)); // Keep 10 logs visible
+      setLogs(prev => [log, ...prev].slice(0, 50)); // Keep history but display limits in component
     });
 
     newSocket.on('spawn_particle', (data) => {
@@ -170,7 +171,7 @@ export default function BigScreen() {
   }, []);
 
   return (
-    <div className="w-screen h-screen bg-brand-black flex items-center justify-center overflow-hidden relative font-sans">
+    <div className="w-screen h-screen bg-[#050508] flex items-center justify-center overflow-hidden relative font-sans">
       {/* Celebration Overlay */}
       {isComplete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-[fadeIn_0.5s_ease-out]">
@@ -203,40 +204,40 @@ export default function BigScreen() {
                className="fixed z-50 pointer-events-none flex flex-col items-center animate-[energyFly_1.5s_ease-in-out_forwards]" 
                style={{
                    top: '60%', 
-                   left: '70%',
+                   left: '40%', // Start closer to the machine
                }}
           >
               <div className="w-4 h-4 rounded-full bg-brand-green shadow-[0_0_20px_#00FF7F,0_0_40px_#00FF7F]" />
-              {/* Optional Name Tag on Particle */}
-              {/* <span className="text-xs text-white mt-1 opacity-80">{p.name}</span> */}
           </div>
       ))}
 
       {/* Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050508] to-black" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200vw] h-[200vh] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,rgba(255,193,7,0.03)_60deg,transparent_120deg)] animate-[spin_20s_linear_infinite]" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vh] bg-[conic-gradient(from_180deg_at_50%_50%,transparent_0deg,rgba(255,193,7,0.05)_40deg,transparent_80deg)] animate-[spin_15s_linear_infinite_reverse]" />
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(rgba(255, 193, 7, 0.3) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,_var(--tw-gradient-stops))] from-[#1a1a2e] via-[#050508] to-black opacity-50" />
       </div>
 
-      <div className="w-full h-full aspect-video relative z-10 grid grid-cols-12 gap-8 p-4 md:p-8 lg:p-12 items-center mx-auto">
-         <div className="absolute inset-0 border border-brand-gold/10 rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.8)] bg-black/20 backdrop-blur-sm pointer-events-none" />
+      <div className="w-full h-full max-w-[1700px] relative z-10 grid grid-cols-[1fr_520px] items-center gap-16 px-10 py-10">
          
-         {/* Left Side (55%) - Reduced dominance */}
-         <div className="col-span-6 h-full relative flex items-center justify-center p-4 lg:p-8">
-            <div className="relative h-[85%] w-auto aspect-[450/800] transition-transform duration-500">
-                 <img src="/charging-station.png" className="h-full w-full object-contain drop-shadow-[0_0_30px_rgba(0,0,0,0.5)]" alt="Energy Cabinet" />
+         {/* Left Side: Machine (Prominent) */}
+         <div className="relative flex items-center justify-center">
+            <div className="relative h-[90vh] w-auto max-h-[980px] aspect-[450/800] -translate-y-[3vh]">
+                 <img src="/charging-station.png" className="h-full w-full object-contain drop-shadow-[0_0_50px_rgba(0,0,0,0.8)]" alt="Energy Cabinet" />
+                 
+                 {/* Logo on Machine */}
                  <div className="absolute left-[8%] top-[15%] bottom-[15%] w-[0.5%] min-w-[3px] bg-brand-yellow/80 shadow-[0_0_15px_rgba(255,215,0,0.5)] flex flex-col justify-center items-center py-4 overflow-hidden">
                     <div className="whitespace-nowrap -rotate-90 text-brand-black font-bold tracking-[0.5em] text-xs absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 text-center">
                         ROCHEX ENERGY
                     </div>
                  </div>
+
+                 {/* Status Lights */}
                  <div className="absolute top-[12%] left-1/2 -translate-x-1/2 flex gap-2 z-20">
                     <div className="w-2 h-2 rounded-full bg-[#00FF00] shadow-[0_0_10px_#00FF00]" />
                     <div className="w-2 h-2 rounded-full bg-[#FF0000] opacity-30" />
                     <div className="w-2 h-2 rounded-full bg-[#00FF00] shadow-[0_0_10px_#00FF00]" />
                  </div>
+
+                 {/* Center Energy Core */}
                  <div className="absolute top-[35%] left-1/2 -translate-x-1/2 z-20">
                      <div className="relative w-16 h-16 flex items-center justify-center">
                         <div
@@ -248,78 +249,45 @@ export default function BigScreen() {
                               '0 0 18px rgba(0,255,127,0.45), 0 0 40px rgba(0,255,127,0.18), inset 0 0 14px rgba(0,0,0,0.6)',
                           }}
                         />
-                        <div
-                          className="absolute inset-[-45%] rounded-full opacity-70 blur-[1.5px] animate-[ringRotate_3.8s_linear_infinite]"
-                          style={{
-                            background:
-                              'conic-gradient(from 0deg, rgba(0,255,127,0) 0deg, rgba(0,255,127,0.35) 60deg, rgba(255,193,7,0.18) 105deg, rgba(0,255,127,0.05) 160deg, rgba(0,255,127,0) 240deg, rgba(0,255,127,0.25) 320deg, rgba(0,255,127,0) 360deg)',
-                            maskImage: 'radial-gradient(circle, transparent 52%, black 56%)',
-                            WebkitMaskImage: 'radial-gradient(circle, transparent 52%, black 56%)',
-                          }}
-                        />
-                        <div
-                          className={`absolute inset-[-18%] rounded-full border border-brand-green/30 ${particles.length > 0 ? 'animate-[electricPulse_0.3s_ease-in-out_infinite]' : 'animate-[electricPulse_2.4s_ease-in-out_infinite]'}`}
-                          style={{
-                            boxShadow: '0 0 16px rgba(0,255,127,0.25), inset 0 0 10px rgba(0,255,127,0.1)',
-                          }}
-                        />
-                        <div
-                          className={`absolute inset-[-8%] rounded-full ${particles.length > 0 ? 'animate-[boltFlicker_0.22s_ease-in-out_infinite]' : 'animate-[boltFlicker_1.15s_ease-in-out_infinite]'}`}
-                          style={{
-                            background:
-                              'radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.6) 55%, rgba(0,0,0,0.85) 100%)',
-                            boxShadow: 'inset 0 0 18px rgba(0,0,0,0.75)',
-                          }}
-                        />
-                        <svg
-                          viewBox="0 0 24 24"
-                          className={`relative z-10 w-8 h-8 ${particles.length > 0 ? 'animate-[boltFlicker_0.18s_ease-in-out_infinite]' : 'animate-[boltFlicker_0.85s_ease-in-out_infinite]'}`}
-                          style={{
-                            filter:
-                              'drop-shadow(0 0 10px rgba(0,255,127,0.9)) drop-shadow(0 0 22px rgba(0,255,127,0.35))',
-                          }}
-                        >
-                          <path d="M13 2L3 14h7l-1 8 12-14h-7l-1-6z" fill="rgba(0,255,127,1)" />
-                          <path
-                            d="M13 2L3 14h7l-1 8 12-14h-7l-1-6z"
-                            fill="rgba(255,255,255,0.25)"
-                            transform="translate(-0.6,-0.6)"
-                          />
-                        </svg>
+                        <div className="absolute inset-0 rounded-full bg-brand-green/20 animate-pulse" />
                      </div>
                  </div>
+
                  <BatteryOverlay percent={percent} />
             </div>
          </div>
 
-         {/* Right Side (45%) - Increased prominence */}
-         <div className="col-span-6 h-full flex flex-col justify-center pl-4 lg:pl-8">
-            <div className="glass-effect rounded-2xl p-6 lg:p-10 border border-brand-gold/10 bg-brand-black/40 backdrop-blur-md shadow-2xl relative overflow-hidden flex flex-col h-[90%] justify-between">
-                <div className="absolute inset-0 rounded-2xl border border-brand-gold/5 shadow-[inset_0_0_30px_rgba(255,193,7,0.02)] pointer-events-none" />
+         {/* Right Side: Panel (Fixed Size Card) */}
+         <div className="w-full flex flex-col justify-center">
+            <div className="bg-[#0A0A10] border border-white/10 rounded-xl p-10 shadow-2xl relative overflow-hidden min-h-[620px] flex flex-col">
                 
                 {/* QR Code Section */}
-                <div className="flex flex-col items-center gap-8 mb-4 flex-1 justify-center">
-                    <div className="w-64 h-64 bg-white rounded-xl p-4 border border-white/10 relative shrink-0 shadow-[0_0_30px_rgba(0,0,0,0.3)]">
+                <div className="flex flex-col items-center gap-6 mb-8">
+                    <div className="w-56 h-56 bg-white p-3 rounded-lg relative">
                          <QRCodeSVG value={joinUrl} className="w-full h-full" />
-                         <div className="absolute inset-0 border-2 border-brand-green/30 rounded-xl shadow-[0_0_15px_rgba(0,255,127,0.1)] animate-pulse pointer-events-none" />
+                         <div className="absolute inset-0 border-2 border-brand-green/30 rounded-lg animate-pulse pointer-events-none" />
                     </div>
-                    <div className="text-center space-y-4">
-                        <div className="px-8 py-3 bg-brand-green/10 rounded-full inline-block border border-brand-green/20">
-                            <h3 className="text-brand-green font-bold text-xl tracking-widest uppercase">扫码蓄力 | SCAN TO POWER UP</h3>
+                    
+                    <div className="text-center space-y-3">
+                        <div className="inline-block px-4 py-1.5 rounded-full bg-brand-green/10 border border-brand-green/20">
+                            <span className="text-brand-green font-bold text-sm tracking-widest uppercase">扫码蓄力 | SCAN TO POWER UP</span>
                         </div>
-                        <p className="text-brand-white text-2xl font-bold leading-tight mt-4">
+                        <h2 className="text-white text-2xl font-bold mt-2">
                             使用微信扫码<br/>
                             <span className="text-brand-text-blue">为年会注入能量</span>
-                        </p>
+                        </h2>
                     </div>
                 </div>
 
-                {/* Live Logs */}
-                <div className="h-[45%] pt-4 lg:pt-6 border-t border-white/5 overflow-hidden">
-                    <LiveLogs logs={logs} />
-                </div>
+                {/* Divider */}
+                <div className="w-full h-px bg-white/10 mb-6" />
+
+                {/* Live Logs Section */}
+                <LiveLogs logs={logs} />
+                
             </div>
          </div>
+
       </div>
     </div>
   );

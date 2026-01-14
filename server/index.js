@@ -31,6 +31,7 @@ const io = new Server(httpServer, {
 let state = {
   progress: 0,
   isComplete: false,
+  submissionCount: 0,
   logs: [],
   serverIp: null, // Will be updated
   publicUrl: null
@@ -53,6 +54,7 @@ const calculateUserIncrement = (currentProgress) => {
 // Auto-growth timer (Background ambiance, slower than users)
 const timer = setInterval(() => {
   if (state.isComplete) return;
+  if (state.submissionCount < 3) return;
 
   if (state.progress < TARGET_PROGRESS) {
     // Auto-growth also decays but ensures we eventually reach 99.99% if no one plays
@@ -93,6 +95,7 @@ io.on('connection', (socket) => {
       
     } else {
       if (!state.isComplete) {
+         state.submissionCount += 1;
          const increment = calculateUserIncrement(state.progress);
          state.progress = Math.min(TARGET_PROGRESS, state.progress + increment);
          io.emit('progress_update', state.progress);
@@ -117,7 +120,7 @@ io.on('connection', (socket) => {
 });
 
 app.post('/reset', (req, res) => {
-  state = { ...state, progress: 0, isComplete: false, logs: [] };
+  state = { ...state, progress: 0, isComplete: false, submissionCount: 0, logs: [] };
   io.emit('init', state);
   res.send('Reset');
 });
