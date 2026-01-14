@@ -6,11 +6,12 @@ import { Zap } from 'lucide-react';
 // Cable Component
 const Cable = () => {
   const [path, setPath] = useState('');
+  const [plugPosition, setPlugPosition] = useState({ x: 0, y: 0, angle: 0 });
 
   useEffect(() => {
     const updatePath = () => {
       const start = document.getElementById('cable-start');
-      const end = document.getElementById('cable-end');
+      const end = document.getElementById('cable-plug-point'); // Updated target
       
       if (!start || !end) return;
 
@@ -21,19 +22,25 @@ const Cable = () => {
       const x1 = startRect.left;
       const y1 = startRect.top + startRect.height / 2;
 
-      // End: Center of the Energy Core (Zap icon)
+      // End: Center of the new Plug Point (Bottom right of machine)
       const x2 = endRect.left + endRect.width / 2;
       const y2 = endRect.top + endRect.height / 2;
 
-      // Control points for a natural hanging/connecting curve
-      // We want it to curve from right to left
-      const cp1x = x1 - (x1 - x2) * 0.5;
-      const cp1y = y1; // Keep horizontal initially
+      // Control points for a natural hanging curve
+      // Start goes slightly down and left
+      const cp1x = x1 - 50;
+      const cp1y = y1 + 200; // Increased drop for more natural slack
       
-      const cp2x = x2 + (x1 - x2) * 0.5;
+      // End approaches horizontally from right (adjusted for larger plug)
+      const cp2x = x2 + 200;
       const cp2y = y2;
 
       setPath(`M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`);
+      
+      // Calculate angle for plug rotation at the end point
+      // Simple approximation based on the last segment direction
+      // Or just fixed horizontal insertion since it's the side of the machine
+      setPlugPosition({ x: x2, y: y2, angle: 0 });
     };
 
     // Update initially and on resize
@@ -64,18 +71,38 @@ const Cable = () => {
                 <feMergeNode in="SourceGraphic"/>
             </feMerge>
         </filter>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#00FF7F" />
-        </marker>
+        <filter id="plugGlow">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
       </defs>
       
-      {/* Base Cable */}
-      <path d={path} fill="none" stroke="#00FF7F" strokeWidth="2" strokeOpacity="0.3" />
-      
-      {/* Flowing Energy Effect */}
-      <path d={path} fill="none" stroke="#00FF7F" strokeWidth="3" strokeDasharray="20 300" strokeLinecap="round" filter="url(#glow)">
-        <animate attributeName="stroke-dashoffset" from="320" to="0" dur="2s" repeatCount="indefinite" />
+      {/* Physical Cable (Thicker, Darker Background) */}
+      <path d={path} fill="none" stroke="#051008" strokeWidth="12" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="#1a3320" strokeWidth="10" strokeLinecap="round" />
+
+      {/* Energy Flow (Inner Core) */}
+      <path d={path} fill="none" stroke="#00FF7F" strokeWidth="3" strokeDasharray="20 100" strokeLinecap="round" filter="url(#glow)">
+        <animate attributeName="stroke-dashoffset" from="120" to="0" dur="1.5s" repeatCount="indefinite" />
       </path>
+
+      {/* Charging Plug Head at the End */}
+      <g transform={`translate(${plugPosition.x}, ${plugPosition.y})`} >
+          {/* Connector Body (Larger 2x) */}
+          <rect x="-40" y="-24" width="48" height="48" rx="8" fill="#1a1a1a" stroke="#333" strokeWidth="2" />
+          
+          {/* Green Indicator Light on Plug */}
+          <circle cx="-20" cy="0" r="6" fill="#00FF7F" filter="url(#plugGlow)">
+             <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" />
+          </circle>
+
+          {/* Metal Contacts (Inserted part) */}
+          <rect x="-4" y="-16" width="12" height="32" fill="#888" />
+      </g>
+
     </svg>
   );
 };
@@ -115,12 +142,11 @@ const BatteryOverlay = ({ percent, particles = [], settledParticles = [] }) => {
               {settledParticles.map((p) => (
                 <div
                   key={`settled-${p.id}`}
-                  className="absolute z-10 px-3 py-1 bg-brand-green/20 border border-brand-green/40 rounded-full text-brand-green text-xs font-bold whitespace-nowrap shadow-[0_0_10px_rgba(0,255,127,0.3)] transition-all duration-500"
+                  className="absolute z-10 px-3 py-1.5 bg-black/50 border border-white/20 rounded-full text-white/90 text-sm font-medium whitespace-nowrap shadow-sm backdrop-blur-sm animate-[fadeIn_0.5s_ease-out]"
                   style={{
                     left: `${p.x}%`,
                     bottom: `${p.y}%`, 
                     transform: `scale(${p.scale})`,
-                    opacity: 0.8
                   }}
                 >
                   {p.name}
@@ -155,7 +181,7 @@ const BatteryOverlay = ({ percent, particles = [], settledParticles = [] }) => {
       <div className="absolute inset-0 flex items-center justify-center z-30">
           <div className="flex flex-col items-center">
             <div className="bg-black/40 backdrop-blur-sm px-6 py-2 rounded-xl border border-brand-green/20 shadow-2xl mb-2">
-                <span className="text-6xl font-black tracking-tighter text-brand-green drop-shadow-[0_0_20px_rgba(0,255,127,0.8)] tabular-nums">
+                <span className="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-brand-green to-emerald-400 drop-shadow-[0_0_20px_rgba(0,255,127,0.5)] tabular-nums">
                     {Math.min(100, Math.round(percent * 100) / 100).toFixed(2)}<span className="text-3xl align-top ml-1">%</span>
                 </span>
             </div>
@@ -171,6 +197,8 @@ const BatteryOverlay = ({ percent, particles = [], settledParticles = [] }) => {
 const LiveLogs = ({ logs }) => {
   // Take only the last 5 logs
   const displayLogs = logs.slice(0, 5);
+  // Create fixed slots array to maintain layout stability
+  const slots = Array(5).fill(null);
   
   return (
     <div className="flex flex-col gap-4 w-full mt-auto">
@@ -181,17 +209,26 @@ const LiveLogs = ({ logs }) => {
             <div className="absolute left-[-20px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-brand-green/20 animate-ping" />
         </div>
         <div className="flex flex-col gap-3 w-full">
-            {displayLogs.map((log, index) => (
-                <div key={index} className="flex items-center justify-between text-base border-b border-white/5 pb-2 animate-[slideIn_0.5s_ease-out]">
-                    <div className="flex items-center gap-3">
-                        <span className="text-brand-green font-bold">{log.message.split(' ')[0]}</span>
-                        <span className="text-white/40">{log.message.split(' ').slice(1).join(' ')}</span>
+            {slots.map((_, index) => {
+                const log = displayLogs[index];
+                return (
+                    <div key={index} className="flex items-center justify-between text-base border-b border-white/5 px-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors h-[40px] overflow-hidden">
+                        {log ? (
+                            <>
+                                <div className="flex items-center gap-3 animate-[slideIn_0.5s_ease-out] whitespace-nowrap overflow-hidden text-ellipsis">
+                                    <span className="text-brand-green font-bold">{log.message.split(' ')[0]}</span>
+                                    <span className="text-white/40 truncate max-w-[200px]">{log.message.split(' ').slice(1).join(' ')}</span>
+                                </div>
+                                <span className="text-white/20 font-mono scale-90 whitespace-nowrap ml-2">{log.timestamp}</span>
+                            </>
+                        ) : (
+                            <div className="w-full h-full opacity-0" aria-hidden="true">Placeholder</div>
+                        )}
                     </div>
-                    <span className="text-white/20 font-mono scale-90">{log.timestamp}</span>
-                </div>
-            ))}
+                );
+            })}
             {displayLogs.length === 0 && (
-                <div className="text-white/20 text-sm italic">等待能量注入...</div>
+                <div className="absolute top-[50%] left-0 w-full text-center text-white/20 text-sm italic pointer-events-none">等待能量注入...</div>
             )}
         </div>
     </div>
@@ -269,13 +306,46 @@ export default function BigScreen() {
         // Add to settled particles (retained at bottom)
         // Give them a random position at the bottom (0-15%) and random scale
         setSettledParticles(prev => {
-            const settled = {
-                ...newParticle,
-                y: Math.random() * 15,
-                scale: 0.7 + Math.random() * 0.3
-            };
-            // Keep last 15 settled particles to avoid overcrowding
-            return [...prev, settled].slice(-15);
+            let candidate = {};
+            let isOverlapping = true;
+            let attempts = 0;
+            const maxAttempts = 50;
+            
+            // Keep fewer particles to avoid clutter (e.g. max 8)
+            const currentParticles = prev.slice(-7);
+
+            while (isOverlapping && attempts < maxAttempts) {
+                candidate = {
+                    ...newParticle,
+                    // X: 10% - 75% (Centered horizontal range)
+                    x: 10 + Math.random() * 65,
+                    // Y: 2% - 15% (Bottom sediment layer)
+                    y: 2 + Math.random() * 13,
+                    // Scale: Uniform size for cleaner look
+                    scale: 1.0
+                };
+                
+                if (currentParticles.length === 0) {
+                    isOverlapping = false;
+                } else {
+                    // Rectangular collision check for pill shape
+                    // Assuming roughly 15% width and 6% height in coordinate space
+                    isOverlapping = currentParticles.some(p => {
+                        const dx = Math.abs(p.x - candidate.x);
+                        const dy = Math.abs(p.y - candidate.y);
+                        return dx < 14 && dy < 7; 
+                    });
+                }
+                attempts++;
+            }
+            
+            // If overlap persists, try to place it in a safe "upper" sediment layer
+            if (isOverlapping) {
+                 candidate.y = 15 + Math.random() * 5;
+                 candidate.x = 10 + Math.random() * 65;
+            }
+            
+            return [...currentParticles, candidate];
         });
         
         // Remove particle after animation (4s for bubbleUp)
@@ -364,7 +434,7 @@ export default function BigScreen() {
                  </div>
 
                  {/* Center Energy Core */}
-                 <div id="cable-end" className="absolute top-[35%] left-1/2 -translate-x-1/2 z-20">
+                 <div className="absolute top-[35%] left-1/2 -translate-x-1/2 z-20">
                      <div className="relative w-20 h-20 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm border border-brand-green/30 shadow-[0_0_30px_rgba(0,255,127,0.3)]">
                         {/* Dynamic Background Pulse */}
                         <div className={`absolute inset-0 rounded-full bg-brand-green/20 ${particles.length > 0 ? 'animate-ping opacity-40 duration-75' : 'animate-pulse opacity-20 duration-1000'}`} />
@@ -378,12 +448,15 @@ export default function BigScreen() {
                  </div>
 
                  <BatteryOverlay percent={percent} particles={particles} settledParticles={settledParticles} />
+
+                 {/* New Plug Point Anchor */}
+                 <div id="cable-plug-point" className="absolute right-[-1%] bottom-[12%] w-4 h-4 bg-transparent z-50" />
             </div>
          </div>
 
          {/* Right Side: Panel (Fixed Size Card) */}
          <div className="w-full flex flex-col justify-center">
-            <div className="bg-[#0A0A10] border border-white/10 rounded-xl p-10 shadow-2xl relative overflow-hidden min-h-[620px] flex flex-col">
+            <div className="bg-[#0A0A10]/90 backdrop-blur-xl border border-brand-green/20 rounded-xl p-10 shadow-[0_0_40px_rgba(0,255,127,0.05)] relative overflow-hidden min-h-[620px] flex flex-col">
                 
                 {/* QR Code Section */}
                 <div className="flex flex-col items-center gap-6 mb-8">
