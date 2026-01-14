@@ -3,8 +3,84 @@ import { io } from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
 import { Zap } from 'lucide-react';
 
-// Reusing the components from original App.jsx
-const BatteryOverlay = ({ percent, particles = [] }) => {
+// Cable Component
+const Cable = () => {
+  const [path, setPath] = useState('');
+
+  useEffect(() => {
+    const updatePath = () => {
+      const start = document.getElementById('cable-start');
+      const end = document.getElementById('cable-end');
+      
+      if (!start || !end) return;
+
+      const startRect = start.getBoundingClientRect();
+      const endRect = end.getBoundingClientRect();
+
+      // Start: Left center of the "Participants" label
+      const x1 = startRect.left;
+      const y1 = startRect.top + startRect.height / 2;
+
+      // End: Center of the Energy Core (Zap icon)
+      const x2 = endRect.left + endRect.width / 2;
+      const y2 = endRect.top + endRect.height / 2;
+
+      // Control points for a natural hanging/connecting curve
+      // We want it to curve from right to left
+      const cp1x = x1 - (x1 - x2) * 0.5;
+      const cp1y = y1; // Keep horizontal initially
+      
+      const cp2x = x2 + (x1 - x2) * 0.5;
+      const cp2y = y2;
+
+      setPath(`M ${x1} ${y1} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`);
+    };
+
+    // Update initially and on resize
+    updatePath();
+    window.addEventListener('resize', updatePath);
+    
+    // Also update periodically in case of layout shifts
+    const interval = setInterval(updatePath, 1000);
+
+    return () => {
+        window.removeEventListener('resize', updatePath);
+        clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <svg className="fixed inset-0 pointer-events-none z-[60]" style={{ overflow: 'visible' }}>
+      <defs>
+        <linearGradient id="cableGradient" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#00FF7F" stopOpacity="0.1" />
+          <stop offset="50%" stopColor="#00FF7F" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#00FF7F" stopOpacity="0.1" />
+        </linearGradient>
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#00FF7F" />
+        </marker>
+      </defs>
+      
+      {/* Base Cable */}
+      <path d={path} fill="none" stroke="#00FF7F" strokeWidth="2" strokeOpacity="0.3" />
+      
+      {/* Flowing Energy Effect */}
+      <path d={path} fill="none" stroke="#00FF7F" strokeWidth="3" strokeDasharray="20 300" strokeLinecap="round" filter="url(#glow)">
+        <animate attributeName="stroke-dashoffset" from="320" to="0" dur="2s" repeatCount="indefinite" />
+      </path>
+    </svg>
+  );
+};
+
+const BatteryOverlay = ({ percent, particles = [], settledParticles = [] }) => {
   // --- 调节区域 START ---
   // 您可以手动修改以下数值来调整进度条位置
   const batteryStyle = {
@@ -34,11 +110,28 @@ const BatteryOverlay = ({ percent, particles = [] }) => {
       
       <div className="w-full h-full relative overflow-hidden p-1">
           <div className="absolute bottom-1 left-1 right-1 bg-brand-green/10 h-[calc(100%-8px)] rounded-[4px] overflow-hidden flex flex-col justify-end">
-              {/* Name Bubbles */}
+              
+              {/* Settled/Retained Bubbles (Sediment at bottom) */}
+              {settledParticles.map((p) => (
+                <div
+                  key={`settled-${p.id}`}
+                  className="absolute z-10 px-3 py-1 bg-brand-green/20 border border-brand-green/40 rounded-full text-brand-green text-xs font-bold whitespace-nowrap shadow-[0_0_10px_rgba(0,255,127,0.3)] transition-all duration-500"
+                  style={{
+                    left: `${p.x}%`,
+                    bottom: `${p.y}%`, 
+                    transform: `scale(${p.scale})`,
+                    opacity: 0.8
+                  }}
+                >
+                  {p.name}
+                </div>
+              ))}
+
+              {/* Rising Name Bubbles */}
               {particles.map(p => (
                 <div
                   key={p.id}
-                  className="absolute z-10 text-black font-black text-2xl whitespace-nowrap px-6 py-3 bg-gradient-to-r from-brand-green to-emerald-400 border-2 border-white rounded-full shadow-[0_0_20px_rgba(0,255,127,0.8)] animate-[bubbleUp_4s_ease-out_forwards]"
+                  className="absolute z-20 text-black font-black text-2xl whitespace-nowrap px-6 py-3 bg-gradient-to-r from-brand-green to-emerald-400 border-2 border-white rounded-full shadow-[0_0_20px_rgba(0,255,127,0.8)] animate-[bubbleUp_4s_ease-out_forwards]"
                   style={{
                     left: `${p.x}%`,
                     bottom: '0%', // Start from bottom
@@ -81,9 +174,11 @@ const LiveLogs = ({ logs }) => {
   
   return (
     <div className="flex flex-col gap-4 w-full mt-auto">
-        <div className="flex items-center gap-3 mb-2">
+        <div id="cable-start" className="flex items-center gap-3 mb-2 relative">
             <div className="w-3 h-3 rounded-full bg-brand-green animate-pulse" />
             <span className="text-white/60 text-base font-bold tracking-wider">实时充电参与者</span>
+            {/* Connection Point Halo */}
+            <div className="absolute left-[-20px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-brand-green/20 animate-ping" />
         </div>
         <div className="flex flex-col gap-3 w-full">
             {displayLogs.map((log, index) => (
@@ -106,6 +201,7 @@ const LiveLogs = ({ logs }) => {
 export default function BigScreen() {
   const [percent, setPercent] = useState(0);
   const [particles, setParticles] = useState([]);
+  const [settledParticles, setSettledParticles] = useState([]); // New state for retained bubbles
   const [logs, setLogs] = useState([]);
   const [socket, setSocket] = useState(null);
   const [joinUrl, setJoinUrl] = useState('');
@@ -165,7 +261,22 @@ export default function BigScreen() {
         const particleId = Date.now() + Math.random();
         // Generate random x position between 5% and 75% to stay within battery width
         const randomX = 5 + Math.random() * 70;
-        setParticles(prev => [...prev, { id: particleId, name: data.name, x: randomX }]);
+        const newParticle = { id: particleId, name: data.name, x: randomX };
+        
+        // Add to flying particles
+        setParticles(prev => [...prev, newParticle]);
+        
+        // Add to settled particles (retained at bottom)
+        // Give them a random position at the bottom (0-15%) and random scale
+        setSettledParticles(prev => {
+            const settled = {
+                ...newParticle,
+                y: Math.random() * 15,
+                scale: 0.7 + Math.random() * 0.3
+            };
+            // Keep last 15 settled particles to avoid overcrowding
+            return [...prev, settled].slice(-15);
+        });
         
         // Remove particle after animation (4s for bubbleUp)
         setTimeout(() => {
@@ -184,6 +295,9 @@ export default function BigScreen() {
 
   return (
     <div className="w-screen h-screen bg-[#050508] flex items-center justify-center overflow-hidden relative font-sans">
+      {/* Cable Connection Overlay */}
+      <Cable />
+
       {/* Celebration Overlay */}
       {isComplete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-[fadeIn_0.5s_ease-out]">
@@ -250,7 +364,7 @@ export default function BigScreen() {
                  </div>
 
                  {/* Center Energy Core */}
-                 <div className="absolute top-[35%] left-1/2 -translate-x-1/2 z-20">
+                 <div id="cable-end" className="absolute top-[35%] left-1/2 -translate-x-1/2 z-20">
                      <div className="relative w-20 h-20 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm border border-brand-green/30 shadow-[0_0_30px_rgba(0,255,127,0.3)]">
                         {/* Dynamic Background Pulse */}
                         <div className={`absolute inset-0 rounded-full bg-brand-green/20 ${particles.length > 0 ? 'animate-ping opacity-40 duration-75' : 'animate-pulse opacity-20 duration-1000'}`} />
@@ -263,7 +377,7 @@ export default function BigScreen() {
                      </div>
                  </div>
 
-                 <BatteryOverlay percent={percent} particles={particles} />
+                 <BatteryOverlay percent={percent} particles={particles} settledParticles={settledParticles} />
             </div>
          </div>
 
