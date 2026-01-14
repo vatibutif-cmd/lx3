@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
-const socketUrl = 'http://localhost:3001'; // 后端服务器地址
-const numberOfSubmissions = 20;
+const socketUrl = 'http://120.26.202.182:3001'; // 后端服务器地址
+const numberOfSubmissions = 100;
 const delayBetweenSubmissionsMs = 500; // 每次提交之间的延迟
 
 async function simulateSubmissions() {
