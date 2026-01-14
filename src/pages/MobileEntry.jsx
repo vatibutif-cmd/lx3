@@ -84,7 +84,7 @@ export default function MobileEntry() {
                         {status === 'submitting' ? (
                             <Zap className="w-16 h-16 text-brand-black animate-spin" />
                         ) : (
-                            <Zap className="w-16 h-16 text-brand-black fill-current animate-[pulse_1s_infinite]" />
+                            <Zap className="w-16 h-16 text-brand-black fill-current animate-[boltFlicker_1s_infinite]" />
                         )}
                     </button>
                     <span className="text-brand-text-gray text-sm font-bold tracking-widest uppercase">

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { QRCodeSVG } from 'qrcode.react';
+import { Zap } from 'lucide-react';
 
 // Reusing the components from original App.jsx
 const BatteryOverlay = ({ percent, particles = [] }) => {
@@ -250,17 +251,15 @@ export default function BigScreen() {
 
                  {/* Center Energy Core */}
                  <div className="absolute top-[35%] left-1/2 -translate-x-1/2 z-20">
-                     <div className="relative w-16 h-16 flex items-center justify-center">
-                        <div
-                          className={`absolute inset-0 rounded-full ${particles.length > 0 ? 'animate-[electricPulse_0.18s_ease-in-out_infinite]' : 'animate-[electricPulse_1.6s_ease-in-out_infinite]'}`}
-                          style={{
-                            background:
-                              'radial-gradient(circle at 30% 30%, rgba(0,255,127,0.55) 0%, rgba(0,255,127,0.18) 35%, rgba(0,0,0,0) 70%)',
-                            boxShadow:
-                              '0 0 18px rgba(0,255,127,0.45), 0 0 40px rgba(0,255,127,0.18), inset 0 0 14px rgba(0,0,0,0.6)',
-                          }}
-                        />
-                        <div className="absolute inset-0 rounded-full bg-brand-green/20 animate-pulse" />
+                     <div className="relative w-20 h-20 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm border border-brand-green/30 shadow-[0_0_30px_rgba(0,255,127,0.3)]">
+                        {/* Dynamic Background Pulse */}
+                        <div className={`absolute inset-0 rounded-full bg-brand-green/20 ${particles.length > 0 ? 'animate-ping opacity-40 duration-75' : 'animate-pulse opacity-20 duration-1000'}`} />
+                        
+                        {/* Lightning Icon */}
+                         <Zap 
+                             className={`w-12 h-12 text-brand-green fill-brand-green drop-shadow-[0_0_15px_rgba(0,255,127,0.8)] ${particles.length > 0 ? 'animate-[boltFlicker_0.2s_ease-in-out_infinite]' : 'animate-[boltFlicker_2s_ease-in-out_infinite]'}`} 
+                             strokeWidth={1.5}
+                         />
                      </div>
                  </div>
 
