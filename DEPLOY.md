@@ -58,8 +58,8 @@ npm install
 npm run build
 ```
 
-## 5. 启动服务
-使用 PM2 启动服务，确保断开 SSH 后服务继续运行。
+## 5. 启动服务 (基础版 - IP访问)
+如果不需要域名，直接使用 PM2 启动。
 
 ```bash
 # 启动服务
@@ -74,27 +74,59 @@ pm2 logs newyear-energy
 
 ## 6. 防火墙设置 (关键)
 在腾讯云/阿里云控制台的**安全组**设置中，放行 **3001** 端口 (TCP)。
-- 如果使用 80 端口，请修改 server/index.js 中的 PORT 为 80 (需要 sudo 权限)。
 
-## 7. 访问
-- **大屏幕端**: 浏览器访问 `http://<服务器公网IP>:3001`
-- **手机扫码**: 大屏幕会自动生成包含公网 IP 的二维码，直接扫描即可。
+## 7. 进阶部署：使用域名 (推荐)
 
-## (进阶) 使用 80 端口或域名
-如果希望通过 `http://example.com` 访问：
-1. **修改端口**: 将 `server/index.js` 中的 `PORT` 改为 `80`，然后重启 (`pm2 restart newyear-energy`)。注意 Linux 下使用 80 端口可能需要 root 权限。
-2. **或使用 Nginx 反代**:
-   ```nginx
-   server {
-       listen 80;
-       server_name example.com;
+如果您有域名（例如 `newyear.company.com`），请按以下步骤操作。这种方式可以避免 IP 变动导致二维码失效。
 
-       location / {
-           proxy_pass http://localhost:3001;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection "upgrade";
-           proxy_set_header Host $host;
-       }
-   }
-   ```
+### 步骤 A: 启动服务 (指定域名)
+使用环境变量 `PUBLIC_URL` 告诉服务器当前的域名。
+
+```bash
+# 先停止旧服务 (如果已启动)
+pm2 delete newyear-energy
+
+# 启动新服务 (将 http://your-domain.com 替换为您的真实域名)
+# 注意：不要带末尾的斜杠 /
+pm2 start server/index.js --name "newyear-energy" --env PUBLIC_URL=http://your-domain.com
+```
+
+### 步骤 B: 配置 Nginx 反向代理 (可选但推荐)
+使用 Nginx 可以让您使用 80/443 端口访问，无需带端口号。
+
+1. 安装 Nginx: `sudo apt install nginx` (Ubuntu) 或 `sudo yum install nginx` (CentOS)
+2. 编辑配置文件: `sudo nano /etc/nginx/conf.d/newyear.conf`
+3. 写入以下内容：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;  # 替换为您的域名
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+4. 重启 Nginx: `sudo systemctl restart nginx`
+
+## 8. 应对域名/IP 变动
+
+**场景 1：仅更换服务器公网 IP (已配置域名)**
+*   **操作**：登录域名解析控制台（阿里云/腾讯云 DNS），修改域名的 A 记录指向新 IP。
+*   **服务器端**：**不需要做任何操作**。只要域名没变，二维码依然有效。
+
+**场景 2：更换了域名 (例如从 a.com 换到 b.com)**
+*   **操作**：需要重启 PM2 进程以更新二维码链接。
+    ```bash
+    # 1. 停止当前进程
+    pm2 delete newyear-energy
+    
+    # 2. 使用新域名重新启动
+    pm2 start server/index.js --name "newyear-energy" --env PUBLIC_URL=http://new-domain.com
+    ```
