@@ -34,7 +34,8 @@ let state = {
   submissionCount: 0,
   logs: [],
   serverIp: null, // Will be updated
-  publicUrl: null
+  publicUrl: null,
+  allSubmissions: [] // Store all submissions for export
 };
 
 // ... existing config ...
@@ -42,13 +43,13 @@ const DURATION_SECONDS = 300; // 5 minutes
 const TARGET_PROGRESS = 99.99;
 const UPDATE_INTERVAL_MS = 100;
 
-// Dynamic increment calculator for user interactions (Pinduoduo style)
+// Dynamic increment calculator for user interactions (Tailored for ~300 users)
 const calculateUserIncrement = (currentProgress) => {
-  if (currentProgress < 30) return 5 + Math.random() * 3;      // 0-30%: +5~8% (Fast start)
-  if (currentProgress < 60) return 2 + Math.random() * 2;      // 30-60%: +2~4%
-  if (currentProgress < 80) return 0.5 + Math.random() * 1.5;  // 60-80%: +0.5~2%
-  if (currentProgress < 95) return 0.1 + Math.random() * 0.2;  // 80-95%: +0.1~0.3%
-  return 0.01 + Math.random() * 0.04;                          // 95-99.99%: +0.01~0.05% (Crawl)
+  // Target: 300 users = 100% => avg ~0.33% per user
+  // We want to ensure 300th user still sees change, so we shouldn't hit 99.99% too early.
+  // 0.33 * 300 = 99.0
+  // Let's add some variance but keep it around 0.33
+  return 0.32 + Math.random() * 0.04; // 0.32% - 0.36%
 };
 
 // Auto-growth timer (Background ambiance, slower than users)
@@ -94,6 +95,12 @@ io.on('connection', (socket) => {
       io.emit('new_log', log);
       
     } else {
+      // Record submission
+      state.allSubmissions.push({
+          name,
+          timestamp: new Date().toLocaleString()
+      });
+
       if (!state.isComplete) {
          state.submissionCount += 1;
          const increment = calculateUserIncrement(state.progress);
@@ -120,9 +127,24 @@ io.on('connection', (socket) => {
 });
 
 app.post('/reset', (req, res) => {
-  state = { ...state, progress: 0, isComplete: false, submissionCount: 0, logs: [] };
+  state = { ...state, progress: 0, isComplete: false, submissionCount: 0, logs: [], allSubmissions: [] };
   io.emit('init', state);
   res.send('Reset');
+});
+
+// Export endpoint
+app.get('/api/export', (req, res) => {
+    // Generate CSV
+    const header = 'Name,Timestamp\n';
+    const rows = state.allSubmissions.map(s => `${s.name},${s.timestamp}`).join('\n');
+    const csvContent = header + rows;
+
+    // Add BOM for Excel compatibility with UTF-8
+    const bom = '\uFEFF';
+    
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="participants.csv"');
+    res.send(bom + csvContent);
 });
 
 // Catch-all to serve React app for client-side routing

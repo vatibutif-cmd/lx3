@@ -181,8 +181,8 @@ const BatteryOverlay = ({ percent, particles = [], settledParticles = [] }) => {
       <div className="absolute inset-0 flex items-center justify-center z-30">
           <div className="flex flex-col items-center">
             <div className="bg-black/40 backdrop-blur-sm px-6 py-2 rounded-xl border border-brand-green/20 shadow-2xl mb-2">
-                <span className="text-6xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-brand-green to-emerald-400 drop-shadow-[0_0_20px_rgba(0,255,127,0.5)] tabular-nums">
-                    {Math.min(100, Math.round(percent * 100) / 100).toFixed(2)}<span className="text-3xl align-top ml-1">%</span>
+                <span className="text-5xl font-black tracking-tighter text-brand-green tabular-nums">
+                    {Math.min(100, Math.round(percent * 100) / 100).toFixed(2)}<span className="text-2xl align-top ml-1">%</span>
                 </span>
             </div>
             
@@ -208,21 +208,21 @@ const LiveLogs = ({ logs }) => {
             {/* Connection Point Halo */}
             <div className="absolute left-[-20px] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-brand-green/20 animate-ping" />
         </div>
-        <div className="flex flex-col gap-3 w-full">
+        <div className="flex flex-col space-y-2 w-full">
             {slots.map((_, index) => {
                 const log = displayLogs[index];
                 return (
-                    <div key={index} className="flex items-center justify-between text-base border-b border-white/5 px-3 rounded-md bg-white/5 hover:bg-white/10 transition-colors h-[40px] overflow-hidden">
+                    <div key={index} className="flex items-center justify-between text-base px-4 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-colors shadow-md h-[40px] overflow-hidden">
                         {log ? (
                             <>
                                 <div className="flex items-center gap-3 animate-[slideIn_0.5s_ease-out] whitespace-nowrap overflow-hidden text-ellipsis">
                                     <span className="text-brand-green font-bold">{log.message.split(' ')[0]}</span>
-                                    <span className="text-white/40 truncate max-w-[200px]">{log.message.split(' ').slice(1).join(' ')}</span>
-                                </div>
-                                <span className="text-white/20 font-mono scale-90 whitespace-nowrap ml-2">{log.timestamp}</span>
+                                    <span className="text-white/60 truncate max-w-[200px]">{log.message.split(' ').slice(1).join(' ')}</span>
+                             </div>
+                             <span className="text-white/40 font-mono scale-90 whitespace-nowrap ml-2">{log.timestamp}</span>
                             </>
                         ) : (
-                            <div className="w-full h-full opacity-0" aria-hidden="true">Placeholder</div>
+                            <div className="w-full h-full opacity-0 border-b border-white/10" aria-hidden="true">Placeholder</div>
                         )}
                     </div>
                 );
@@ -368,31 +368,7 @@ export default function BigScreen() {
       {/* Cable Connection Overlay */}
       <Cable />
 
-      {/* Celebration Overlay */}
-      {isComplete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-[fadeIn_0.5s_ease-out]">
-            <div className="relative flex flex-col items-center justify-center">
-                {/* Rays of Light */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200vmax] h-[200vmax] animate-[spin_10s_linear_infinite]">
-                    <div className="w-full h-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,255,127,0.2)_20deg,transparent_40deg,rgba(255,215,0,0.2)_60deg,transparent_80deg)]" />
-                </div>
-                
-                <div className="relative z-10 text-center space-y-8 animate-[scaleUp_0.8s_cubic-bezier(0.175,0.885,0.32,1.275)]">
-                    <div className="text-brand-green text-[10vmin] font-black tracking-tighter drop-shadow-[0_0_50px_rgba(0,255,127,0.8)]">
-                        ENERGY FULL
-                    </div>
-                    <div className="text-white text-[5vmin] font-bold tracking-widest">
-                        充能完成
-                    </div>
-                    {triggerName && (
-                        <div className="text-brand-gold text-[3vmin] font-mono mt-4 animate-pulse">
-                            关键充能者: {triggerName}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-      )}
+
 
       {/* Particles */}
       {particles.map(p => (
@@ -427,7 +403,7 @@ export default function BigScreen() {
                  </div>
 
                  {/* Status Lights */}
-                 <div className="absolute top-[12%] left-1/2 -translate-x-1/2 flex gap-2 z-20">
+                 <div className="absolute top-[17%] left-1/2 -translate-x-1/2 flex gap-2 z-20">
                     <div className="w-2 h-2 rounded-full bg-[#00FF00] shadow-[0_0_10px_#00FF00]" />
                     <div className="w-2 h-2 rounded-full bg-[#FF0000] opacity-30" />
                     <div className="w-2 h-2 rounded-full bg-[#00FF00] shadow-[0_0_10px_#00FF00]" />
@@ -455,10 +431,10 @@ export default function BigScreen() {
          </div>
 
          {/* Right Side: Panel (Fixed Size Card) */}
-         <div className="w-full flex flex-col justify-center">
-            <div className="bg-[#0A0A10]/90 backdrop-blur-xl border border-brand-green/20 rounded-xl p-10 shadow-[0_0_40px_rgba(0,255,127,0.05)] relative overflow-hidden min-h-[620px] flex flex-col">
-                
-                {/* QR Code Section */}
+          <div className="w-full flex flex-col justify-center relative">
+             <div className="p-6 bg-gradient-to-br from-gray-900/80 to-gray-800/70 rounded-3xl shadow-2xl border border-brand-green/40 backdrop-blur-sm relative overflow-hidden min-h-[620px] flex flex-col">
+                 
+                 {/* QR Code Section */}
                 <div className="flex flex-col items-center gap-6 mb-8">
                     <div className="w-56 h-56 bg-white p-3 rounded-lg relative">
                          <QRCodeSVG value={joinUrl} className="w-full h-full" />
@@ -483,6 +459,47 @@ export default function BigScreen() {
                 <LiveLogs logs={logs} />
                 
             </div>
+            {/* Celebration Overlay (Moved to cover only right panel) */}
+            {isComplete && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md animate-[fadeIn_0.5s_ease-out] rounded-3xl">
+                    <div className="relative flex flex-col items-center justify-center w-full h-full p-4">
+                        {/* Rays of Light */}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] animate-[spin_10s_linear_infinite]">
+                            <div className="w-full h-full bg-[conic-gradient(from_0deg,transparent_0deg,rgba(0,255,127,0.2)_20deg,transparent_40deg,rgba(255,215,0,0.2)_60deg,transparent_80deg)]" />
+                        </div>
+                        
+                        <div className="relative z-10 text-center space-y-4 animate-[scaleUp_0.8s_cubic-bezier(0.175,0.885,0.32,1.275)] w-full">
+                            <div className="text-brand-green text-5xl font-black tracking-tighter drop-shadow-[0_0_30px_rgba(0,255,127,0.8)]">
+                                ENERGY FULL
+                            </div>
+                            <div className="text-white text-2xl font-bold tracking-widest">
+                                充能完成
+                            </div>
+                            {triggerName && (
+                                <div className="text-brand-gold text-lg font-mono mt-2 animate-pulse truncate max-w-full px-2">
+                                    关键充能者: {triggerName}
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-3 mt-8 pointer-events-auto w-full max-w-[240px] mx-auto">
+                                <button 
+                                     onClick={() => setIsComplete(false)}
+                                     className="w-full py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold backdrop-blur-sm transition-all active:scale-95 text-sm"
+                                 >
+                                     返回
+                                 </button>
+                                <button 
+                                    onClick={() => window.open('/api/export', '_blank')}
+                                    className="w-full py-2 rounded-full bg-brand-green/20 hover:bg-brand-green/30 border border-brand-green/40 text-brand-green font-bold backdrop-blur-sm transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                >
+                                    <span>导出名单</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
          </div>
 
       </div>
